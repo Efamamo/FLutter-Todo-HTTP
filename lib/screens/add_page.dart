@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'todo.dart';
 
 class AddTodoPage extends StatefulWidget {
-  const AddTodoPage({super.key});
+  Map? todo;
+  AddTodoPage({this.todo, super.key});
 
   @override
   State<AddTodoPage> createState() => _AddTodoPageState();
@@ -14,6 +15,17 @@ class AddTodoPage extends StatefulWidget {
 class _AddTodoPageState extends State<AddTodoPage> {
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+  bool isEdit = false;
+  @override
+  void initState() {
+    super.initState();
+    final todo = widget.todo;
+    if (todo != null) {
+      isEdit = true;
+      titleController.text = todo['title'];
+      descriptionController.text = todo['description'];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,16 +57,46 @@ class _AddTodoPageState extends State<AddTodoPage> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(5))),
-              onPressed: submit,
-              child: const Text("Submit"))
+              onPressed: isEdit
+                  ? () {
+                      if (widget.todo != null) {
+                        update(widget.todo?["_id"]);
+                      }
+                    }
+                  : submit,
+              child: Text(isEdit ? 'Update' : "Submit"))
         ],
       ),
     );
   }
 
+  void update(id) async {
+    final title = titleController.text;
+    final description = descriptionController.text;
+    final body = {
+      "title": title,
+      "description": description,
+      "is_completed": false
+    };
+    // submit data
+    final url = 'http://api.nstack.in/v1/todos/$id';
+    final uri = Uri.parse(url);
+    final response = await http.put(uri,
+        body: jsonEncode(body), headers: {'Content-Type': 'application/json'});
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      showSuccess('Update Success');
+      titleController.text = '';
+      descriptionController.text = '';
+      Navigator.push(context, MaterialPageRoute(builder: (context) {
+        return const ToDoList();
+      }));
+    } else {
+      showError('Update Failed');
+    }
+  }
+
   void submit() async {
-    // get
-    print('started');
     final title = titleController.text;
     final description = descriptionController.text;
     final body = {
