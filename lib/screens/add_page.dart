@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'todo.dart';
 
 class AddTodoPage extends StatefulWidget {
   const AddTodoPage({super.key});
@@ -70,7 +71,9 @@ class _AddTodoPageState extends State<AddTodoPage> {
       showSuccess('Creation Success');
       titleController.text = '';
       descriptionController.text = '';
-      Navigator.pop(context);
+      Navigator.push(context, MaterialPageRoute(builder: (context) {
+        return const ToDoList();
+      }));
     } else {
       showError('Creation Failed');
     }
