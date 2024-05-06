@@ -35,21 +35,40 @@ class _ToDoListState extends State<ToDoList> {
       ),
       body: Visibility(
         visible: isLoading,
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
         replacement: RefreshIndicator(
           onRefresh: fetch,
           child: ListView.builder(
               itemCount: items.length,
               itemBuilder: (context, idx) {
                 final item = items[idx];
+                final id = item['_id'];
                 return ListTile(
                   leading: CircleAvatar(child: Text('${idx + 1}')),
                   title: Text(item['title']),
                   subtitle: Text(item['description']),
+                  trailing: PopupMenuButton(onSelected: (value) {
+                    if (value == 'edit') {
+                      navigateEdt(item);
+                    } else {
+                      deleteById(id);
+                    }
+                  }, itemBuilder: (context) {
+                    return [
+                      const PopupMenuItem(
+                        child: Text("Edit"),
+                        value: 'edit',
+                      ),
+                      const PopupMenuItem(
+                        child: Text("Delete"),
+                        value: 'delete',
+                      )
+                    ];
+                  }),
                 );
               }),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
         ),
       ),
       floatingActionButton: CircleAvatar(
@@ -63,8 +82,29 @@ class _ToDoListState extends State<ToDoList> {
 
   void navigate() {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return const AddTodoPage();
+      return AddTodoPage();
     }));
+  }
+
+  void navigateEdt(item) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return AddTodoPage(
+        todo: item,
+      );
+    }));
+  }
+
+  Future<void> deleteById(id) async {
+    final url = 'http://api.nstack.in/v1/todos/$id';
+    final uri = Uri.parse(url);
+    final response = await http.delete(uri);
+    if (response.statusCode == 200) {
+      setState(() {
+        items = items.where((element) => element['_id'] != id).toList();
+      });
+    } else {
+      showError('Delation Failed');
+    }
   }
 
   Future<void> fetch() async {
@@ -81,5 +121,18 @@ class _ToDoListState extends State<ToDoList> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  void showError(message) {
+    final snackBar = SnackBar(
+      content: Text(
+        message,
+        style: const TextStyle(
+          color: Colors.white,
+        ),
+      ),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(snackBar);
   }
 }
